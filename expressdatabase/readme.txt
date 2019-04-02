@@ -1,0 +1,1 @@
+This is a quick code example for creating a data base via express and node js you can add to a json file 
