@@ -1,0 +1,17 @@
+extends layout
+
+block content
+
+  h1 Shahs Money Exchange
+  p Find Up To Date Rates Now 
+  .container
+    fieldset
+      form(action='/', method='post')
+        input.ghost-input(name='currencies', type='text', placeholder='Enter Currencies', required='')
+        input.ghost-button(type='submit', value='Exchange Rate Is ...')
+        | if(live !== null){
+        | p = live
+        | }
+        
+
+      

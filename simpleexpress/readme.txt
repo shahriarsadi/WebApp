@@ -1,0 +1,1 @@
+This is a simple express app that connects to a currency api. This allows you to type in diffrent currencies such as USD, CAD and then an output of the conversion rate will be outputed.
