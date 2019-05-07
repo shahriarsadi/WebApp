@@ -1,0 +1,273 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Libre Study</title>
+
+    <link rel="shortcut icon" href="https://scontent-lga3-1.xx.fbcdn.net/v/t1.15752-9/59533137_723833701364859_4999498303713312768_n.png?_nc_cat=108&_nc_ht=scontent-lga3-1.xx&oh=f9787b4d4f6dc42f8ff167f9497e3364&oe=5D5B0B9A"/>
+
+    <!-- Google Font Links -->
+    <link href="https://fonts.googleapis.com/css?family=Share" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Akronim' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css?family=Faster+One|Trade+Winds" rel="stylesheet">
+    <style>
+      form { background: gray; padding: 10px; position: fixed; bottom: 0; width: 50%; }
+      form input { background: #E8E0D1; border: 0; padding: 13px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: goldenrod; border: none; padding: 10px; } 
+       #messages { list-style-type: lower-norwegian; margin: 0; padding: 0; max-width: 50%; border-radius: .4em;}
+      
+      #messages li:nth-child(odd) { background: goldenrod; position: right; border-radius: .4em;}
+      #messages {
+      position: relative;
+      background-color: #E8E0D1;
+      color: black;
+      border-radius: .4em;
+      corner-radius:.4em;
+      font-size: 30px;
+      
+      font-family: 'Share', cursive;
+      }
+
+
+   
+        /* Split the screen in half */
+.split {
+  height: 100%;
+  width: 50%;
+  position: fixed;
+  z-index: 1;
+  
+  overflow-x: hidden;
+  
+}
+body {
+  background-color: white;
+  color: white;
+}
+
+/* Control the left side */
+.left {
+  left: 0;
+  
+  
+}
+
+/* Control the right side */
+.right {
+  right: 0;
+  top: 0;
+  background-color: #A3896F;
+ 
+}
+#top{
+    position: top;
+    
+}
+
+* {
+  box-sizing: border-box;
+}
+
+
+/**
+ * Canvas
+ */
+
+.whiteboard {
+  height: 500px;
+  width: 50%;
+  
+  
+ 
+}
+
+.colors {
+  
+}
+
+.color {
+  shape-outside: circle();
+  display: inline-flex;
+  height: 10px;
+  width: 10px;
+}
+
+.color.black { background-color: black; }
+.color.red { background-color: pink; }
+.color.green { background-color: green; }
+.color.blue { background-color: blue; }
+.color.yellow { background-color: yellow; }
+     
+    
+    </style>
+</head>
+
+<body>
+    <ul id="messages"></ul>
+    <div class="split left">
+
+        
+        <form action="">
+        <input id="m" autocomplete="off" /><button>Send</button>
+        </form>
+        </div>
+    </div>
+
+    <div class="split right">
+        
+        <center>       <center><canvas class="whiteboard" ></canvas></center>
+
+  <div class="colors">
+    <div class="color black"></div>
+    <div class="color red"></div>
+    <div class="color green"></div>
+    <div class="color blue"></div>
+    <div class="color yellow"></div>
+  </div>
+  </center> 
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/main.js"></script>
+  <center>
+   <div id='dropzone'>
+      <p>Drop Images Here</p>
+    </div>
+    <div id='images'></div>
+    <script src='./drag-and-drop.js' type='text/javascript'></script>
+    <script src='./socket-handler.js' type='text/javascript'></script>
+    </center>
+  </body>
+
+        </div>
+    </div>
+  
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const name = window.location.search.substring(1).split('=')[1];
+        document.forms[0].addEventListener('submit', function(e){
+            e.preventDefault();
+            const msg = document.querySelector('#m').value;
+            socket.emit('chat message', msg, name);
+            document.querySelector('#m').value = "";
+            return false;
+        });
+        socket.on('chat message', (msg) => {
+            console.log(msg);
+            document.querySelector('#messages').innerHTML += `<li>${msg}</li>`;
+        })
+    </script>
+    <script>
+        'use strict';
+
+(function() {
+
+  var socket = io();
+  var canvas = document.getElementsByClassName('whiteboard')[0];
+  var colors = document.getElementsByClassName('color');
+  var context = canvas.getContext('2d');
+
+  var current = {
+    color: 'black'
+  };
+  var drawing = false;
+
+  canvas.addEventListener('mousedown', onMouseDown, false);
+  canvas.addEventListener('mouseup', onMouseUp, false);
+  canvas.addEventListener('mouseout', onMouseUp, false);
+  canvas.addEventListener('mousemove', throttle(onMouseMove, 0), false);
+  
+  //Touch support for mobile devices
+  canvas.addEventListener('touchstart', onMouseDown, false);
+  canvas.addEventListener('touchend', onMouseUp, false);
+  canvas.addEventListener('touchcancel', onMouseUp, false);
+  canvas.addEventListener('touchmove', throttle(onMouseMove, 0), false);
+
+  for (var i = 0; i < colors.length; i++){
+    colors[i].addEventListener('click', onColorUpdate, false);
+  }
+
+  socket.on('drawing', onDrawingEvent);
+
+  window.addEventListener('resize', onResize, false);
+  onResize();
+
+
+  function drawLine(x0, y0, x1, y1, color, emit){
+    context.beginPath();
+    context.moveTo(x0, y0);
+    context.lineTo(x1, y1);
+    context.strokeStyle = color;
+    context.lineWidth = 9;
+    context.stroke();
+    context.closePath();
+
+    if (!emit) { return; }
+    var w = canvas.width;
+    var h = canvas.height;
+
+    socket.emit('drawing', {
+      x0: x0 / w,
+      y0: y0 / h,
+      x1: x1 / w,
+      y1: y1 / h,
+      color: color
+    });
+  }
+
+  function onMouseDown(e){
+    drawing = true;
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  }
+
+  function onMouseUp(e){
+    if (!drawing) { return; }
+    drawing = false;
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+  }
+
+  function onMouseMove(e){
+    if (!drawing) { return; }
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  }
+
+  function onColorUpdate(e){
+    current.color = e.target.className.split(' ')[1];
+  }
+
+  // limit the number of events per second
+  function throttle(callback, delay) {
+    var previousCall = new Date().getTime();
+    return function() {
+      var time = new Date().getTime();
+
+      if ((time - previousCall) >= delay) {
+        previousCall = time;
+        callback.apply(null, arguments);
+      }
+    };
+  }
+
+  function onDrawingEvent(data){
+    var w = canvas.width;
+    var h = canvas.height;
+    drawLine(data.x0 , data.y0 , data.x1 , data.y1 , data.color);
+  }
+
+  // make the canvas fill its parent
+  function onResize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+})();
+    </script>
+</body>
+
+</html>

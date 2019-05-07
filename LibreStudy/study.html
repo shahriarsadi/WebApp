@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+	
+	<head>
+    <title>Libre Study</title>
+    <link rel="shortcut icon" href="https://scontent-lga3-1.xx.fbcdn.net/v/t1.15752-9/59533137_723833701364859_4999498303713312768_n.png?_nc_cat=108&_nc_ht=scontent-lga3-1.xx&oh=f9787b4d4f6dc42f8ff167f9497e3364&oe=5D5B0B9A"/>
+
+    <!-- Google Font Links -->
+    <link href='https://fonts.googleapis.com/css?family=Akronim' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css?family=Faster+One|Trade+Winds" rel="stylesheet">
+    </head>
+
+
+    <style>
+
+    .split {
+  	height: 100%;
+  	width: 50%;
+  	position: fixed;
+  	z-index: 1;
+  	
+  	overflow-x: hidden;
+  	
+	}
+
+	.left {
+ 	 left: 0;
+ 	 background-color: #111;
+ 	 color: goldenrod;
+ 	 font: arial;
+ 	 height: 500px;
+	}
+
+	.right {
+ 	 right: 0;
+ 	 background-color: #CCA125;
+ 	 height: 500px;
+	
+
+    
+    /**
+ * Fix user-agent
+ */
+
+
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/**
+ * Canvas
+ */
+
+.whiteboard {
+  height: 200px;
+  width: 100%;
+  position:bottom;
+  
+}
+
+.colors {
+  
+}
+
+.color {
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+	.color.black { background-color: black; }
+	.color.red { background-color: red; }
+	.color.green { background-color: green; }
+	.color.blue { background-color: blue; }
+	.color.yellow { background-color: yellow; }
+
+	
+	</style>
+
+
+	<body>
+		<div class="split left">
+	<!-- everything on here is on the left -->
+	
+		<center><h1 id="top">Message here !</h1></center>
+        <form action="">
+        <input id="m" autocomplete="off" /><button>Send</button>
+        </form>
+        </div>
+  
+    
+  		</div>
+
+
+	<div class="split right">
+    <!-- everything on here is on the right  -->
+    <center><h1>Draw Here</center>
+    	<canvas class="whiteboard" ></canvas>
+
+  		<div class="colors">
+    	<div class="color black"></div>
+    	<div class="color red"></div>
+    	<div class="color green"></div>
+    	<div class="color blue"></div>
+    	<div class="color yellow"></div>
+ 		</div>
+  	<script src="/socket.io/socket.io.js"></script>
+  	<script src="/main.js"></script>
+
+  	</div>
+
+
+
+  	<script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const name = window.location.search.substring(1).split('=')[1];
+        document.forms[0].addEventListener('submit', function(e){
+            e.preventDefault();
+            const msg = document.querySelector('#m').value;
+            socket.emit('chat message', msg, name);
+            document.querySelector('#m').value = "";
+            return false;
+        });
+        socket.on('chat message', (msg) => {
+            console.log(msg);
+            document.querySelector('#messages').innerHTML += `<li>${msg}</li>`;
+        })
+    </script>
+
+	
+
+
+
+
+
+	<script type="text/javascript">
+		
+	
+
+	(function() {
+
+ 	 var socket = io();
+ 	 var canvas = document.getElementsByClassName('whiteboard')[0];
+ 	 var colors = document.getElementsByClassName('color');
+  	var context = canvas.getContext('2d');
+
+  	var current = {
+  	  color: 'black'
+ 	 };
+ 	 var drawing = false;
+
+ 	 canvas.addEventListener('mousedown', onMouseDown, false);
+  	canvas.addEventListener('mouseup', onMouseUp, false);
+ 	 canvas.addEventListener('mouseout', onMouseUp, false);
+ 	 canvas.addEventListener('mousemove', throttle(onMouseMove, 10), false);
+  
+  	//Touch support for mobile devices
+  	canvas.addEventListener('touchstart', onMouseDown, false);
+  	canvas.addEventListener('touchend', onMouseUp, false);
+  	canvas.addEventListener('touchcancel', onMouseUp, false);
+  	canvas.addEventListener('touchmove', throttle(onMouseMove, 10), false);
+
+ 	 for (var i = 0; i < colors.length; i++){
+    colors[i].addEventListener('click', onColorUpdate, false);
+  	}
+
+  	socket.on('drawing', onDrawingEvent);
+
+  	window.addEventListener('resize', onResize, false);
+  	onResize();
+
+
+  	function drawLine(x0, y0, x1, y1, color, emit){
+    context.beginPath();
+    context.moveTo(x0, y0);
+    context.lineTo(x1, y1);
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.stroke();
+    context.closePath();
+
+    if (!emit) { return; }
+    var w = canvas.width;
+    var h = canvas.height;
+
+    socket.emit('drawing', {
+      x0: x0 / w,
+      y0: y0 / h,
+      x1: x1 / w,
+      y1: y1 / h,
+      color: color
+    	});
+  	}
+
+ 	 function onMouseDown(e){
+    drawing = true;
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  	}
+
+  	function onMouseUp(e){
+    if (!drawing) { return; }
+    drawing = false;
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+  	}
+
+  	function onMouseMove(e){
+    if (!drawing) { return; }
+    drawLine(current.x, current.y, e.clientX||e.touches[0].clientX, e.clientY||e.touches[0].clientY, current.color, true);
+    current.x = e.clientX||e.touches[0].clientX;
+    current.y = e.clientY||e.touches[0].clientY;
+  	}
+
+  	function onColorUpdate(e){
+   	 current.color = e.target.className.split(' ')[1];
+  	}
+
+  	// limit the number of events per second
+  	function throttle(callback, delay) {
+    	var previousCall = new Date().getTime();
+    	return function() {
+      var time = new Date().getTime();
+
+      if ((time - previousCall) >= delay) {
+        previousCall = time;
+        callback.apply(null, arguments);
+      }
+   	 };
+  	}
+
+  	function onDrawingEvent(data){
+    	var w = canvas.width;
+    	var h = canvas.height;
+    	drawLine(data.x0 * w, data.y0 * h, data.x1 * w, data.y1 * h, data.color);
+  	}
+
+  	// make the canvas fill its parent
+  	function onResize() {
+    	canvas.width = window.innerWidth;
+    	canvas.height = window.innerHeight;
+  	}
+
+	})();
+	</script>
+	</body>
+
+
+
+</html>
